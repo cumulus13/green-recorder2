@@ -18,12 +18,14 @@ locales = map(lambda i: ('share/'+i, [i+'/green-recorder.mo', ]), glob('locale/*
 
 data_files.extend(locales)
 
-setup(name = "green-recorder",
+setup(name = "green-recorder2",
       version = "3.2.3",
       description = "Record your desktop easily using a simple GUI",
       author = "M.Hanny Sabbagh", 
       author_email = "mhsabbagh@outlook.com",
-      url = "https://github.com/foss-project/green-recorder/",
+      url = "https://github.com/cumulus13/green-recorder/",
       license='GPLv3',
       scripts=['green-recorder'],
-      data_files=data_files)
+      data_files=data_files,
+      install_requires=['configparser', 'configset'],
+      python_requires=">=3")

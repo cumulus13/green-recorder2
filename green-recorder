@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # FOSS Project <https://foss-project.com>, 2017, 2018.
@@ -17,38 +17,66 @@
 import gi
 gi.require_version('AppIndicator3', '0.1')
 gi.require_version('Gtk','3.0')
+from configset import configset
 
 from gi.repository import Gtk, Gdk, GLib, AppIndicator3 as appindicator
 from pydbus import SessionBus
-import subprocess, signal, threading, datetime, urllib, gettext, locale, os, ConfigParser, sys
+# try:
+  # import configparser
+import subprocess, signal, threading, datetime, urllib, gettext, locale, os, sys
+if sys.version_info.major == 3:
+  from urllib.parse import unquote
+else:
+  from urllib import unquote
+  # config = configparser.ConfigParser()
+# except:
+  # import subprocess, signal, threading, datetime, urllib, gettext, locale, os, ConfigParser, sys
+  # config = ConfigParser.ConfigParser()
 
 # Configuration
 confDir =  os.path.join(GLib.get_user_config_dir(), 'green-recorder/')
 confFile = os.path.join(confDir + "config.ini")
-config = ConfigParser.ConfigParser()
+config = configset(confFile)
+print("confFile:", confFile)
+
+config.write_config('Options', 'frames', '30')
+config.write_config('Options', 'delay', '0')
+config.write_config('Options', 'command', '')
+config.write_config('Options', 'filename', '')
+config.write_config('Options', 'videocheck', 'True')
+config.write_config('Options', 'audiocheck', 'True')
+config.write_config('Options', 'mousecheck', 'True')
+config.write_config('Options', 'followmousecheck', 'False')
 
 if not os.path.exists(confDir):
   os.makedirs(confDir)
 
-if os.path.isfile(confFile):
-  config.read(confFile)
-else:
-  VideosFolder = GLib.get_user_special_dir(GLib.USER_DIRECTORY_VIDEOS)
-  if VideosFolder is None:
-    VideosFolder = os.environ['HOME']
-    
-  config.add_section('Options')
-  config.set('Options', 'frames', '30')
-  config.set('Options', 'delay', '0')
-  config.set('Options', 'folder', "file://" + VideosFolder)
-  config.set('Options', 'command', '')
-  config.set('Options', 'filename', '')
-  config.set('Options', 'videocheck', 'True')
-  config.set('Options', 'audiocheck', 'True')
-  config.set('Options', 'mousecheck', 'True')
-  config.set('Options', 'followmousecheck', 'False')
-  with open(confFile, 'wb') as confFile2:
-    config.write(confFile2)
+# if os.path.isfile(confFile):
+  # print("check confFile =", os.path.isfile(confFile))
+  # config.read(confFile)
+try:
+    VideosFolder = GLib.get_user_special_dir(GLib.USER_DIRECTORY_VIDEOS)
+except:
+  VideosFolder = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_VIDEOS)
+print("VideosFolder:", VideosFolder)
+if VideosFolder is None:
+  VideosFolder = os.environ['HOME']
+
+config.write_config('Options', 'folder', "file://" + VideosFolder)
+
+if not os.path.isfile(confFile):
+  # config.add_section('Options')
+  config.write_config('Options', 'frames', '30')
+  config.write_config('Options', 'delay', '0')
+  config.write_config('Options', 'folder', "file://" + VideosFolder)
+  config.write_config('Options', 'command', '')
+  config.write_config('Options', 'filename', '')
+  config.write_config('Options', 'videocheck', 'True')
+  config.write_config('Options', 'audiocheck', 'True')
+  config.write_config('Options', 'mousecheck', 'True')
+  config.write_config('Options', 'followmousecheck', 'False')
+  # with open(confFile, 'wb') as confFile2:
+  #   config.write(confFile2)
 
 # Localization.
 locale.setlocale(locale.LC_ALL, '')
@@ -71,7 +99,7 @@ except:
   DisplayServer = "xorg"
   pass #Ok, cause it means user is using Xorg.
   
-print "You are recording on: " + str(DisplayServer)
+print ("You are recording on: " + str(DisplayServer))
 
 if "wayland" in DisplayServer:
   DisplayServer = "gnomewayland"
@@ -266,10 +294,10 @@ def stoprecording(_):
  
 def record():
     global RecorderFullPathName # grab the path
-    RecorderFullPathName = urllib.unquote(folderchooser.get_uri() + '/' + filename.get_text() + '.' + formatchooser.get_active_id())
+    RecorderFullPathName = unquote(folderchooser.get_uri() + '/' + filename.get_text() + '.' + formatchooser.get_active_id())
 
     abs_path=RecorderFullPathName.replace("file://",'')
-    if os.path.exists(abs_path) and filename.get_text() is not "":
+    if os.path.exists(abs_path) and filename.get_text() != "":
         dialog = Gtk.Dialog(
             _("File already exists!"),
             None,
@@ -300,9 +328,9 @@ def record():
     RecorderFrames = str(frames.get_value_as_int())
     
     if len(filename.get_text()) < 1:
-      RecorderFullPathName = urllib.unquote(folderchooser.get_uri() + '/' + str(datetime.datetime.now()) + '.' + formatchooser.get_active_id())
+      RecorderFullPathName = unquote(folderchooser.get_uri() + '/' + str(datetime.datetime.now()) + '.' + formatchooser.get_active_id())
     else:
-      RecorderFullPathName = urllib.unquote(folderchooser.get_uri() + '/' + filename.get_text() + '.' + formatchooser.get_active_id())
+      RecorderFullPathName = unquote(folderchooser.get_uri() + '/' + filename.get_text() + '.' + formatchooser.get_active_id())
       
     RecorderAbsPathName = RecorderFullPathName.replace("file://", "")
     
@@ -415,15 +443,18 @@ delaytext.set_label(_("Delay:"))
 commandtext.set_label(_("Run Command After Recording:"))
 audiosourcelabel.set_label(_("Audio Input Source:"))
 areachooser.connect("delete-event", hide_on_delete)
-frames.set_value(int(config.get('Options', 'frames')))
-delay.set_value(int(config.get('Options', 'delay')))
-filename.set_text(config.get('Options', 'filename'))
-folderchooser.set_uri(config.get('Options', 'folder'))
+try:
+  frames.set_value(int(config.get_config('Options', 'frames')))
+except:
+  frames.set_value(0)
+delay.set_value(int(config.get_config('Options', 'delay')))
+filename.set_text(config.get_config('Options', 'filename'))
+folderchooser.set_uri(config.get_config('Options', 'folder'))
 videoswitch.set_active(config.getboolean('Options', 'videocheck'))
 audioswitch.set_active(config.getboolean('Options', 'audiocheck'))
 mouseswitch.set_active(config.getboolean('Options', 'mousecheck'))
 followmouseswitch.set_active(config.getboolean('Options', 'followmousecheck'))
-command.set_text(config.get('Options', 'command'))
+command.set_text(config.get_config('Options', 'command'))
 
 stopbutton.set_sensitive(False)
 playbutton.set_sensitive(False)
@@ -435,7 +466,13 @@ try:
   audiosourcesids = subprocess.check_output("pacmd list-sources | grep -e device.string", shell=True)
 except Exception as e:
   print(e)
+if sys.version_info.major == 3:
+  audiosourcesnames = str(audiosourcesnames.decode('utf-8'))
+  audiosourcesids = str(audiosourcesids.decode('utf-8'))
+# print("audiosourcesnames =", audiosourcesnames)
+# print("audiosourcesnames =", audiosourcesnames.split("\n"))
 audiosourcesnames = audiosourcesnames.split("\n")[:-1]
+print("audiosourcesnames =", audiosourcesnames)
 
 for i in range(len(audiosourcesnames)):
   audiosourcesnames[i] = audiosourcesnames[i].replace("\t\tdevice.description = ", "")
@@ -487,7 +524,7 @@ class Handler:
         stoprecording(_)
         
     def playbuttonclicked(self, GtkButton):
-        subprocess.call(["xdg-open", urllib.unquote(RecorderAbsPathName)])
+        subprocess.call(["xdg-open", unquote(RecorderAbsPathName)])
 
     def areasettings(self, GtkButton):
         output = subprocess.check_output(["xwininfo -name \"Area Chooser\" | grep -e Width -e Height -e Absolute"], shell=True)[:-1]
@@ -505,58 +542,58 @@ class Handler:
         sendnotification(_("Your area position has been saved!"), 3)
 
     def frameschanged(self, GtkSpinButton):
-        config.set('Options', 'frames', str(int(float(frames.get_value()))))
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'frames', str(int(float(frames.get_value()))))
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
 
     def delaychanged(self, GtkSpinButton):
-        config.set('Options', 'delay', str(int(float(delay.get_value()))))
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'delay', str(int(float(delay.get_value()))))
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
           
     def filenamechanged(self, GtkEntry):
-        config.set('Options', 'filename', urllib.unquote(filename.get_text()))
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'filename', unquote(filename.get_text()))
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
                
     def folderchosen(self, GtkFileChooserButton):
-        config.set('Options', 'folder', urllib.unquote(folderchooser.get_uri()))
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'folder', unquote(folderchooser.get_uri()))
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
     
     def commandchanged(self, GtkEntry):
-        config.set('Options', 'command', command.get_text())
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'command', command.get_text())
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
           
     def videoswitchchanged(self, GtkSwitch):
-        config.set('Options', 'videocheck', str(videoswitch.get_active()))
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'videocheck', str(videoswitch.get_active()))
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
           
     def audioswitchchanged(self, GtkSwitch):
-        config.set('Options', 'audiocheck', str(audioswitch.get_active()))
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'audiocheck', str(audioswitch.get_active()))
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
           
     def mouseswitchchanged(self, GtkSwitch):
-        config.set('Options', 'mousecheck', str(mouseswitch.get_active()))
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'mousecheck', str(mouseswitch.get_active()))
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
           
     def followmouseswitchchanged(self, GtkSwitch):
-        config.set('Options', 'followmousecheck', str(followmouseswitch.get_active()))
-        global confFile
-        with open(confFile, 'w+') as newconfFile:
-          config.write(newconfFile)
+        config.write_config('Options', 'followmousecheck', str(followmouseswitch.get_active()))
+        #global conFfile
+        #with open(conFfile, 'w+') as newconfFile:
+          #config.write(newconFfile)
           
         
 # Connect the handler to the glade file's objects.
@@ -564,7 +601,15 @@ builder.connect_signals(Handler())
 
 # Load CSS for Area Chooser.
 style_provider = Gtk.CssProvider()
-css = """
+if sys.version_info.major == 3:
+  css = b"""
+#AreaChooser {
+    background-color: rgba(255, 255, 255, 0);
+    border: 1px solid red;
+}
+"""
+else:
+  css = """
 #AreaChooser {
     background-color: rgba(255, 255, 255, 0);
     border: 1px solid red;
