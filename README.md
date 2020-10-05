@@ -64,5 +64,7 @@ The program is released under GPL 3.
 ## Requirements
 
 Python > 3.0
+
 configparser(pip)
+
 configset(pip)
