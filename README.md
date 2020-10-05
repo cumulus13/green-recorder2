@@ -59,3 +59,10 @@ Make sure you are running it with Python 2. It doesn't work currently with Pytho
 ## License
 
 The program is released under GPL 3.
+
+
+## Requirements
+
+Python > 3.0
+configparser(pip)
+configset(pip)
