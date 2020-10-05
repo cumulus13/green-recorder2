@@ -1,4 +1,4 @@
-# This project is archived, it's no longer under development. As the original developer, the work of maintaining and updating this program takes too much of my time, which I was giving for free, and I am no longer interested in working with things like ffmpeg/wayland/GNOME's screencaster or solving the issues related to them or why they don't work. If you would like to continue development, please feel free to fork the project according to the GPL license.
+# This project is archived from "https://github.com/foss-project/green-recorder", but continue developing by me, please feel free to fork the project according to the GPL license.
 
 # Green Recorder
 
